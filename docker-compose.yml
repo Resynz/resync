@@ -1,0 +1,18 @@
+version: '2'
+services:
+  resync:
+    image: resync:latest
+    network_mode: "bridge"
+    ports:
+      - "8050:8050"
+    environment:
+      - TZ=Asia/Shanghai
+      - ENV=audit
+    command: /bin/resync
+    volumes:
+      - ./data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
