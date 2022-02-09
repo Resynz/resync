@@ -36,21 +36,23 @@ func StartServer() {
 
 	app.GET("/ping", common.AuthDetection(controller.Ping))
 
-	adminGroup:=app.Group("/admin")
+	adminGroup := app.Group("/admin")
 	RegisterAdminRoute(adminGroup)
 
-	groupGroup:=app.Group("/group")
+	groupGroup := app.Group("/group")
 	RegisterGroupRoute(groupGroup)
 
-	taskGroup:=app.Group("/task")
+	taskGroup := app.Group("/task")
 	RegisterTaskRoute(taskGroup)
 
-	codeAuthGroup:=app.Group("/code_auth")
+	logGroup := app.Group("/log")
+	RegisterLogRoute(logGroup)
+
+	codeAuthGroup := app.Group("/code_auth")
 	RegisterCodeAuthRoute(codeAuthGroup)
 
-
 	go func() {
-		log.Printf("\033[42;30m DONE \033[0m[Resync] Start Success! Port:%d\n",config.Conf.AppPort)
+		log.Printf("\033[42;30m DONE \033[0m[Resync] Start Success! Port:%d\n", config.Conf.AppPort)
 	}()
 	if err := app.Run(fmt.Sprintf(":%d", config.Conf.AppPort)); err != nil {
 		log.Fatalf("start server failed! error:%s\n", err.Error())
