@@ -162,3 +162,77 @@ func GetTaskLogInfo(ctx *common.Context) {
 		_lf.Close()
 	}
 }
+
+func GetTaskLogList(ctx *common.Context) {
+	var form struct {
+		Page   int   `form:"page" binding:"" json:"page"`
+		Limit  int   `form:"limit" binding:"" json:"limit"`
+		TaskId int64 `form:"task_id" binding:"required" json:"task_id"`
+	}
+	if err := ctx.ShouldBind(&form); err != nil {
+		common.HandleResponse(ctx, code.InvalidParams, nil)
+		return
+	}
+	var taskLog model.TaskLog
+	var taskLogList []*model.TaskLog
+	session := db.Handler.XStmt(taskLog.GetTableName()).Where(dbx.Eq("task_id", form.TaskId), dbx.Op("status", ">", model.TaskStatusProcess))
+	if form.Page > 0 {
+		session = session.Limit(form.Limit, (form.Page-1)*form.Limit)
+	}
+	session = session.Desc("id")
+	err := session.List(&taskLogList)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+	if len(taskLogList) == 0 {
+		data := map[string]interface{}{
+			"list":  nil,
+			"total": 0,
+		}
+		common.HandleResponse(ctx, code.SuccessCode, data)
+		return
+	}
+	total, err := session.Count(&taskLog)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+
+	adminIds := make([]interface{}, len(taskLogList))
+	for i, v := range taskLogList {
+		adminIds[i] = v.CreatorId
+	}
+	var admin model.Admin
+	var adminList []*model.Admin
+	err = db.Handler.XStmt(admin.GetTableName()).Where(dbx.In("id", adminIds...)).List(&adminList)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+	adminMap := make(map[int64]*model.Admin)
+	for _, v := range adminList {
+		adminMap[v.Id] = v
+	}
+	type listObj struct {
+		*model.TaskLog
+		CreatorName string `json:"creator_name"`
+	}
+	list := make([]*listObj, len(taskLogList))
+	for i, v := range taskLogList {
+		l := &listObj{
+			TaskLog:     v,
+			CreatorName: "",
+		}
+		ad, ok := adminMap[v.CreatorId]
+		if ok {
+			l.CreatorName = ad.Name
+		}
+		list[i] = l
+	}
+	data := map[string]interface{}{
+		"list":  list,
+		"total": total,
+	}
+	common.HandleResponse(ctx, code.SuccessCode, data)
+}

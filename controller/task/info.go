@@ -48,11 +48,22 @@ func Info(ctx *common.Context) {
 		Task       *model.Task       `json:"task"`
 		Detail     *model.TaskDetail `json:"detail"`
 		ActionList []*model.Action   `json:"action_list"`
+		LastRecord *model.TaskLog    `json:"last_record"`
 	}
 	data := &infoObj{
 		Task:       &task,
 		Detail:     &taskDetail,
 		ActionList: actionList,
+	}
+	var taskLog model.TaskLog
+	has, err = db.Handler.XStmt(taskLog.GetTableName()).Where(dbx.Eq("task_id", task.Id)).Desc("id").Get(&taskLog)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+
+	if has {
+		data.LastRecord = &taskLog
 	}
 	common.HandleResponse(ctx, code.SuccessCode, data)
 }

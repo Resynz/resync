@@ -13,4 +13,5 @@ import (
 
 func RegisterLogRoute(route *gin.RouterGroup) {
 	route.GET("/info/:id", common.AuthDetection(task_log.GetTaskLogInfo, enum.MustLogin))
+	route.GET("/list", common.AuthDetection(task_log.GetTaskLogList, enum.MustLogin))
 }
