@@ -21,4 +21,5 @@ func RegisterAdminRoute(route *gin.RouterGroup) {
 	route.PUT("/:id", common.AuthDetection(admin.Update, enum.MustLogin))
 	route.DELETE("/:id", common.AuthDetection(admin.Delete, enum.MustLogin))
 	route.POST("/modify-passwd", common.AuthDetection(admin.ModifyPasswd, enum.MustLogin))
+	route.GET("/log/login", common.AuthDetection(admin.GetAdminLoginLog, enum.MustLogin))
 }

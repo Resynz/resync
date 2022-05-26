@@ -274,3 +274,38 @@ func ModifyPasswd(ctx *common.Context) {
 	}
 	common.HandleResponse(ctx, code.SuccessCode, data)
 }
+
+// GetAdminLoginLog 获取管理员登录日志
+func GetAdminLoginLog(ctx *common.Context) {
+	var form struct {
+		AdminId int64 `form:"admin_id" binding:"required" json:"admin_id"`
+		Page    int   `form:"page" binding:"" json:"page"`
+		Limit   int   `form:"limit" binding:"" json:"limit"`
+	}
+	if err := ctx.ShouldBind(&form); err != nil {
+		common.HandleResponse(ctx, code.InvalidParams, nil)
+		return
+	}
+	var loginLog model.LoginLog
+	var list []*model.LoginLog
+	session := db.Handler.XStmt(loginLog.GetTableName()).Where(dbx.Eq("admin_id", form.AdminId)).Desc("id")
+
+	if form.Page > 0 {
+		session = session.Limit(form.Limit, (form.Page-1)*form.Limit)
+	}
+	err := session.List(&list)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+	total, err := session.Count(&loginLog)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
+		return
+	}
+	data := map[string]interface{}{
+		"list":  list,
+		"total": total,
+	}
+	common.HandleResponse(ctx, code.SuccessCode, data)
+}

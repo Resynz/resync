@@ -16,40 +16,44 @@ import (
 // Login 登录
 func Login(ctx *common.Context) {
 	type formValidate struct {
-		Name string `form:"name" binding:"required" json:"name"`
+		Name     string `form:"name" binding:"required" json:"name"`
 		Password string `form:"password" binding:"required" json:"password"`
 	}
 	var form formValidate
-	if err:=ctx.ShouldBind(&form);err!=nil{
-		common.HandleResponse(ctx,code.InvalidParams,nil)
+	if err := ctx.ShouldBind(&form); err != nil {
+		common.HandleResponse(ctx, code.InvalidParams, nil)
 		return
 	}
 	var admin model.Admin
-	has,err:=db.Handler.XStmt(admin.GetTableName()).Where(dbx.Eq("name",form.Name),dbx.Eq("password",form.Password)).Get(&admin)
-	if err!=nil{
-		common.HandleResponse(ctx,code.BadRequest,nil,err.Error())
+	has, err := db.Handler.XStmt(admin.GetTableName()).Where(dbx.Eq("name", form.Name), dbx.Eq("password", form.Password)).Get(&admin)
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
 		return
 	}
 	if !has {
-		common.HandleResponse(ctx,code.BadRequest,nil,"账号或密码错误")
+		common.HandleResponse(ctx, code.BadRequest, nil, "账号或密码错误")
 		return
 	}
-	auth:=&common.Auth{
+	if admin.Status != model.AccountStatusEnable {
+		common.HandleResponse(ctx, code.BadRequest, nil, "该账号已被禁用")
+		return
+	}
+	auth := &common.Auth{
 		Id:     admin.Id,
 		Name:   admin.Name,
 		Ip:     ctx.ClientIP(),
 		Expire: 0,
 	}
-	token,err:=auth.GenToken()
-	if err!=nil{
-		common.HandleResponse(ctx,code.BadRequest,nil,err.Error())
+	token, err := auth.GenToken()
+	if err != nil {
+		common.HandleResponse(ctx, code.BadRequest, nil, err.Error())
 		return
 	}
-	data:=map[string]string{
-		"token":token,
+	data := map[string]string{
+		"token": token,
 	}
 
-	loginLog:=model.LoginLog{
+	loginLog := model.LoginLog{
 		Id:         0,
 		AdminId:    admin.Id,
 		Ip:         auth.Ip,
@@ -59,5 +63,5 @@ func Login(ctx *common.Context) {
 
 	_ = db.Handler.XStmt(loginLog.GetTableName()).Insert(&loginLog)
 
-	common.HandleResponse(ctx,code.SuccessCode,data)
+	common.HandleResponse(ctx, code.SuccessCode, data)
 }
