@@ -5,15 +5,29 @@
 package server
 
 import (
+	"embed"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"io/fs"
 	"log"
+	"net/http"
 	"resync/common"
 	"resync/config"
 	"resync/controller"
 	"resync/middleware"
 )
+
+//go:embed static
+var embedFiles embed.FS
+
+func getFileSystem() http.FileSystem {
+	fsys, err := fs.Sub(embedFiles, "static")
+	if err != nil {
+		log.Fatalf("load embed file failed! error:%s\n", err.Error())
+	}
+	return http.FS(fsys)
+}
 
 func StartServer() {
 	gin.SetMode(config.Conf.Mode)
@@ -50,6 +64,11 @@ func StartServer() {
 
 	codeAuthGroup := app.Group("/code_auth")
 	RegisterCodeAuthRoute(codeAuthGroup)
+
+	app.GET("/", func(context *gin.Context) {
+		context.Redirect(http.StatusFound, "/index")
+	})
+	app.StaticFS("/index", getFileSystem())
 
 	go func() {
 		log.Printf("\033[42;30m DONE \033[0m[Resync] Start Success! Port:%d\n", config.Conf.AppPort)

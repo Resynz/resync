@@ -1,13 +1,17 @@
 version: '2'
 services:
   resync:
-    image: resync:latest
+    image: resync:0.0.1
     network_mode: "bridge"
     ports:
       - "8050:8050"
     environment:
-      - TZ=Asia/Shanghai
-      - ENV=audit
+      - AppPort=8050
+      - TaskQueueSize=10
+      - ActorSize=2
+      - Mode=release
+      - DefaultAdminName=resync
+      - DefaultAdminPasswd=resynz
     command: /bin/resync
     volumes:
       - ./data:/data
